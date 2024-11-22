@@ -9,10 +9,12 @@ edit any other functions.
 Follow further instructions in the attached .pdf and .ipynb files, available
 through Scientia.
 """
+import random
 from typing import Callable, Dict, List, Tuple, Union
 import numpy as np
 import numpy.random as rn
 from itertools import product
+from functools import partial
 
 alphabet = "abcdefghijklmnopqrstuvwxyz01234567890 .,\n"
 digits = "0123456789"
@@ -154,8 +156,8 @@ def binary_symmetric_channel(data: np.ndarray, p: float) -> np.ndarray:
     return : np.ndarray
       data with a number of bits flipped
     """
-
-    raise NotImplementedError
+    noise = np.random.rand(data.size) < p
+    return data ^ noise.astype(int)
 
 
 def decoder_accuracy(m: int, p: float) -> float:
@@ -169,8 +171,19 @@ def decoder_accuracy(m: int, p: float) -> float:
       The probability of messages being correctly decoded with this
       Hamming code, using the noisy channel of probability p
     """
+    num_code_words = 2000
+    n = get_n(m)
+    k = n - m
+    hamming_encode_with_m = partial(hamming_encode, m=m)
+    binary_symmetric_channel_with_p = partial(binary_symmetric_channel, p=p)
+    hamming_decode_with_p = partial(hamming_decode, m=m)
 
-    raise NotImplementedError
+    source_messages = np.random.randint(low=0, high=2, size=(num_code_words, k), dtype=int)
+    encoded_messages = np.apply_along_axis(hamming_encode_with_m, arr=source_messages, axis=1)
+    noisy_messages = np.apply_along_axis(binary_symmetric_channel_with_p, arr=encoded_messages, axis=1)
+    decoded_messages = np.apply_along_axis(hamming_decode_with_p, arr=noisy_messages, axis=1)
+    matches = np.all(source_messages == decoded_messages, axis=1).astype(int)
+    return np.sum(matches) / num_code_words
 
 
 def get_n(m):
